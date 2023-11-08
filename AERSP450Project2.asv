@@ -2,7 +2,6 @@ clc
 clear
 close all
 
-load('IODMeasurements.mat')
 load('IODMeasurements2.mat')
 
 l = length(AZIMUTH) ;
@@ -14,9 +13,8 @@ for i = 1:l
     LOS(i,3) = sind(ELEVATION(i)) ;
 end
 
-RSAT = zeros(l/3,3)
 for i = 1:l/3
-    RSAT(i,:) = gauss(TIMES((i*3-2:i*3)) ,RSITES((i*3-2:i*3),:) ,LOS((i*3-2:i*3),:),MU)
+    RSAT(i) = gauss(TIMES((i*3-2:i*3)) ,RSITES((i*3-2:i*3),:) ,LOS((i*3-2:i*3),:))
     
 end 
 
@@ -50,7 +48,5 @@ function Rsat = gauss(time,R,Phat,mu)
     a = - (A^2 + 2*A*E + R2) ;
     b = - 2*mu*B*(A+E) ;
     c = - mu^2*B^2 ;
-
-    roots([1 0 a 0 0 b 0 0 c])
 
 end
