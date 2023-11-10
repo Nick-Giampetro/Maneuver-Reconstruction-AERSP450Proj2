@@ -24,7 +24,13 @@ for i = 1:l/3
     
 end 
 
-
+f = figure ;
+subplot(1,1,1)
+plot3(R_ODE45_ECEF(:,1), R_ODE45_ECEF(:,2), R_ODE45_ECEF(:,3), 'r', R_FG_ECEF(:,1), R_FG_ECEF(:,2), R_FG_ECEF(:,3), 'b')
+xlabel('X (KM)')
+ylabel('Y (KM)')
+zlabel('Z (KM)')
+exportgraphics(f,['3D' '.jpg'])
 
 function [Rsat,V2sat,OE] = gauss(time,R,L,mu)
     z1 = time(1) - time(2) ;
