@@ -8,7 +8,7 @@ load('IODMeasurements2.mat')
 l = length(AZIMUTH) ;
 LOS = zeros(l,3) ;
 
-MU = 3.986*10^5
+MU = 3.986*10^5 ;
 
 for i = 1:l
     LOS(i,1) = cosd(ELEVATION(i)) * cosd(AZIMUTH(i)) ;
@@ -20,35 +20,35 @@ RSAT = zeros(3,3,l/3) ;
 V2SAT = zeros(l/3,3) ;
 ORBEL = zeros(l/3,6) ;
 for i = 1:l/3
-    [RSAT(:,:,i),V2SAT(i,:),ORBEL(i,:)] = gauss(TIMES((i*3-2:i*3)) ,RSITES((i*3-2:i*3),:) ,LOS((i*3-2:i*3),:),MU,Re)
+    [RSAT(:,:,i),V2SAT(i,:),ORBEL(i,:)] = gauss(TIMES((i*3-2:i*3)) ,RSITES((i*3-2:i*3),:) ,LOS((i*3-2:i*3),:),MU) ;
     
 end 
 
 
 
-function [Rsat,V2sat,OE] = gauss(time,R,Phat,mu,Re)
-    t1 = time(1) - time(2) ;
-    t3 = time(3) - time(2) ;
-    t  = time(3) - time(1) ;
+function [Rsat,V2sat,OE] = gauss(time,R,L,mu)
+    z1 = time(1) - time(2) ;
+    z3 = time(3) - time(2) ;
+    z13  = time(3) - time(1) ;
     
-    p(1,:) = cross(Phat(2,:),Phat(3,:)) ;
-    p(2,:) = cross(Phat(1,:),Phat(3,:)) ;
-    p(3,:) = cross(Phat(1,:),Phat(2,:)) ;
+    lcross(1,:) = cross(L(2,:),L(3,:)) ;
+    lcross(2,:) = cross(L(1,:),L(3,:)) ;
+    lcross(3,:) = cross(L(1,:),L(2,:)) ;
 
-    D0 = dot(Phat(1,:),p(1,:)) ;
+    D0 = dot(L(1,:),lcross(1,:)) ;
     
     D = zeros(3,3) ;
     for i = 1:3
         for j = 1:3
-            D(i,j) = dot(R(i,:),p(j,:)) ;
+            D(i,j) = dot(R(i,:),lcross(j,:)) ;
         end
     end
 
-    A = 1/D0 * (-D(1,2)*t3/t + D(2,2) + D(3,2)*t1/t) ;
-    B = 1/(6*D0) * ( D(1,2)*(t3^2-t^2)*t3/t + D(3,2)*(t^2-t1^2)*t1/t) ;
-    E = dot(R(2,:),Phat(2,:)) ;
+    A = 1/D0 * (-D(1,2)*(z3/z13) + D(2,2) + D(3,2)*(z1/z13)) ;
+    B = 1/(6*D0) * ( D(1,2)*(z3^2-z13^2)*(z3/z13) + D(3,2)*(z13^2-z1^2)*(z1/z13)) ;
+    E = dot(L(2,:),R(2,:)) ;
     
-    R2 = dot(R(2,:),R(2,:)) ;
+    R2 = norm(R(2,:)) ;
     a = - (A^2 + 2*A*E + R2) ;
     b = - 2*mu*B*(A+E) ;
     c = - mu^2*B^2 ;
@@ -57,26 +57,25 @@ function [Rsat,V2sat,OE] = gauss(time,R,Phat,mu,Re)
     % rejects values that are not positive 
     r2 = r2(r2==real(r2)) ;
     r2 = r2(r2>0) ;
-    
-    for i = 1:length(r2)
-        rho(1) = 1/D0 * ( (6*(D(3,1)*t1/t3 + D(2,1)*t/t3)*r2(i)^3 + mu*D(3,1)*(t^2-t1^2)*t1/t3) / (6*r2(i)^3 + mu*(t^2-t3^2)) - D(1,1) ) ;
-        rho(2) = A + mu*B/r2(i)^3 ;
-        rho(3) = 1/D0 * ( (6*(D(1,3)*t3/t1 + D(2,3)*t/t1)*r2(i)^3 + mu*D(1,3)*(t^2-t1^3)*t3/t1) / (6*r2(i)^3 + mu*(t^2-t1^2)) - D(3,3) ) ;
 
-        RsatT(1,:) = R(1,:) + rho(1) * Phat(1,:) ;
-        RsatT(2,:) = R(2,:) + rho(2) * Phat(2,:) ;
-        RsatT(3,:) = R(3,:) + rho(3) * Phat(3,:) ;
+    for i = 1:length(r2)
+        u2 = mu/(r2(i)^3) ;
+
+        c1 = z3/z13 * (1 + (u2/6) * (z13^2 - z3^2)) ;
+        c3 = - z1/z13 * (1 + (u2/6) * (z13^2 - z1^2)) ;
+
+        rho(1) = 1/D0 * ( -D(1,1) + (1/c1)*D(2,1) - (c3/c1)*D(3,1) ) ;
+        rho(2) = A + u2*B;
+        rho(3) = 1/D0 * ( (-c1/c3)*D(1,3) + (1/c3)*D(2,3) - D(3,3) )  ;
+
+        Rsat(1,:) = R(1,:) + rho(1) * L(1,:) ;
+        Rsat(2,:) = R(2,:) + rho(2) * L(2,:) ;
+        Rsat(3,:) = R(3,:) + rho(3) * L(3,:) ;
         
-        v2T = gibbs(RsatT,mu) ; 
-        
-        [a,e,I,O,W,f] = RV2OE(RsatT(2,:),v2T,mu) ;
-        rp = a * (1-e) ;
-        
-        if ( e >=0 && e < 1) && (rp > Re)
-            Rsat = RsatT ;
-            V2sat = v2t ;
-            OE = [a,e,I,O,W,f] ;
-        end
+        V2sat = gibbs(Rsat,mu) ;
+       
+        [a,e,I,O,W,f] = RV2OE(Rsat(2,:),V2sat,mu) ;
+        OE = [a,e,I,O,W,f] ;
     end
 end
 
@@ -87,14 +86,39 @@ function v2 = gibbs(R, mu)
     r(2) = norm(R(2,:)) ;
     r(3) = norm(R(3,:)) ;
     
-    D = cross(R(2,:),R(3,:)) + cross(R(3,:),R(1,:)) + cross(R(1,:),R(2,:)) ;
-    N = r(1) * cross(R(2,:),R(3,:)) +  r(2) * cross(R(3,:),R(1,:)) + r(3) * cross(R(1,:),R(2,:)) ;
+    cR2R3 = cross(R(2,:),R(3,:)) ;
+    cR3R1 = cross(R(3,:),R(1,:)) ;
+    cR1R2 = cross(R(1,:),R(2,:)) ;
+       
+    D = cR2R3 + cR3R1 + cR1R2 ;
+    N = r(1) * cR2R3 +  r(2) * cR3R1 + r(3) * cR1R2 ;
     S = (r(2)-r(3))*R(1,:) + (r(3)-r(1))*R(2,:) + (r(1)-r(2))*R(3,:) ;
     
     d = norm(D) ;
     n = norm(N) ;
+    s = norm(S) ;
 
     v2 = 1/r(2) * sqrt( mu / (n*d)) * cross(D,R(2,:)) + sqrt(mu/(n*d)) * S ;
+end
+
+
+
+% Two body problem function
+function dx = TwoBP(~,r,mu)
+    x = r(1) ;
+    y = r(2) ;
+    z = r(3) ;
+    xdot = r(4) ;
+    ydot = r(5) ;
+    zdot = r(6) ;
+
+    R = sqrt(x^2 + y^2 + z^2) ;
+
+    xdoubledot = -mu/R^3 * x ;
+    ydoubledot = -mu/R^3 * y ;
+    zdoubledot = -mu/R^3 * z ;
+
+    dx = [ xdot ; ydot ; zdot ; xdoubledot ; ydoubledot ; zdoubledot ] ;
 end
 
 
@@ -145,5 +169,4 @@ function [a,e,I,RAAN,AOP,f] = RV2OE(r,v,mu)
     elseif(dot(r,eV) < 0)
         f = 360 - acosd(dot(eV,r)/(e*R1)) ;
     end
-
 end
