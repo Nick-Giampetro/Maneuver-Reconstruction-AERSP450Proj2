@@ -16,21 +16,32 @@ for i = 1:l
     LOS(i,3) = sind(ELEVATION(i)) ;
 end
 
-RSAT = zeros(3,3,l/3) ;
+RSAT = zeros(3,3,3,l/3) ;
 V2SAT = zeros(l/3,3) ;
 ORBEL = zeros(l/3,6) ;
 for i = 1:l/3
-    [RSAT(:,:,i),V2SAT(i,:),ORBEL(i,:)] = gauss(TIMES((i*3-2:i*3)) ,RSITES((i*3-2:i*3),:) ,LOS((i*3-2:i*3),:),MU) ;
+    [RSAT(:,:,:,i),V2SAT(i,:),ORBEL(i,:)] = gauss(TIMES((i*3-2:i*3)) ,RSITES((i*3-2:i*3),:) ,LOS((i*3-2:i*3),:),MU) ;
     
 end 
 
+init = zeros(1,6) ;
 f = figure ;
-subplot(1,1,1)
-plot3(R_ODE45_ECEF(:,1), R_ODE45_ECEF(:,2), R_ODE45_ECEF(:,3), 'r', R_FG_ECEF(:,1), R_FG_ECEF(:,2), R_FG_ECEF(:,3), 'b')
-xlabel('X (KM)')
-ylabel('Y (KM)')
-zlabel('Z (KM)')
-exportgraphics(f,['3D' '.jpg'])
+for i = 1:l/3
+    totalT = 2*pi*sqrt(ORBEL(i,1)^3/MU) ;
+    t = linspace(1,totalT,10000) ;
+    options = odeset('reltol',1e-12,'abstol',1e-12) ;
+    init((1:3)) = RSAT(2,:,i) ;
+    init((4:6)) = V2SAT(i,:) ;
+    [t,RSAT_T] = ode45( @(t,RSAT_T) TwoBP(t,RSAT_T,MU) , t , init, options) ;
+    subplot(1,1,1)
+    plot3(RSAT_T(:,1), RSAT_T(:,2), RSAT_T(:,3))
+    xlabel('X (KM)')
+    ylabel('Y (KM)')
+    zlabel('Z (KM)')
+    exportgraphics(f,['3D' '.jpg'])
+    hold on
+end
+hold off
 
 function [Rsat,V2sat,OE] = gauss(time,R,L,mu)
     z1 = time(1) - time(2) ;
@@ -60,10 +71,12 @@ function [Rsat,V2sat,OE] = gauss(time,R,L,mu)
     c = - mu^2*B^2 ;
 
     r2 = roots([1 0 a 0 0 b 0 0 c]) ;
-    % rejects values that are not positive 
+    % rejects values that are not real and positive
     r2 = r2(r2==real(r2)) ;
     r2 = r2(r2>0) ;
-
+    
+    Rsat = zeros(3,3,3) ;
+    V2sat = zeros(1,3) ;
     for i = 1:length(r2)
         u2 = mu/(r2(i)^3) ;
 
@@ -74,13 +87,13 @@ function [Rsat,V2sat,OE] = gauss(time,R,L,mu)
         rho(2) = A + u2*B;
         rho(3) = 1/D0 * ( (-c1/c3)*D(1,3) + (1/c3)*D(2,3) - D(3,3) )  ;
 
-        Rsat(1,:) = R(1,:) + rho(1) * L(1,:) ;
-        Rsat(2,:) = R(2,:) + rho(2) * L(2,:) ;
-        Rsat(3,:) = R(3,:) + rho(3) * L(3,:) ;
+        Rsat(1,:,i) = R(1,:) + rho(1) * L(1,:) ;
+        Rsat(2,:,i) = R(2,:) + rho(2) * L(2,:) ;
+        Rsat(3,:,i) = R(3,:) + rho(3) * L(3,:) ;
         
-        V2sat = gibbs(Rsat,mu) ;
+        V2sat(i,:) = gibbs(Rsat(:,:,i),mu) ;
        
-        [a,e,I,O,W,f] = RV2OE(Rsat(2,:),V2sat,mu) ;
+        [a,e,I,O,W,f] = RV2OE(Rsat(2,:,i),V2sat(i,:),mu) ;
         OE = [a,e,I,O,W,f] ;
     end
 end
@@ -110,7 +123,7 @@ end
 
 
 % Two body problem function
-function dx = TwoBP(~,r,mu)
+function dx = TwoBP(~, r, mu)
     x = r(1) ;
     y = r(2) ;
     z = r(3) ;
@@ -130,7 +143,6 @@ end
 
 
 function [a,e,I,RAAN,AOP,f] = RV2OE(r,v,mu)
-        
     % declaring gravitational constant of earth and time provided and ECI
     ECI = [[1 0 0];[0 1 0];[0 0 1]];
     

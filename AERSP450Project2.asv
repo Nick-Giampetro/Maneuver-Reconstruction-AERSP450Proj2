@@ -24,7 +24,24 @@ for i = 1:l/3
     
 end 
 
-
+init = zeros(1,6) ;
+f = figure ;
+for i = 1:l/3
+    totalT = 2*pi*sqrt(ORBEL(i,1) ;
+    t = linspace(1,totalT,10000) ;
+    options = odeset('reltol',1e-12,'abstol',1e-12) ;
+    init((1:3)) = RSAT(2,:,i) ;
+    init((4:6)) = V2SAT(i,:) ;
+    [t,RSAT_T] = ode45( @(t,RSAT_T) TwoBP(t,RSAT_T,MU) , t , init, options) ;
+    subplot(1,1,1)
+    plot3(RSAT_T(:,1), RSAT_T(:,2), RSAT_T(:,3))
+    xlabel('X (KM)')
+    ylabel('Y (KM)')
+    zlabel('Z (KM)')
+    exportgraphics(f,['3D' '.jpg'])
+    hold on
+end
+hold off
 
 function [Rsat,V2sat,OE] = gauss(time,R,L,mu)
     z1 = time(1) - time(2) ;
@@ -40,7 +57,7 @@ function [Rsat,V2sat,OE] = gauss(time,R,L,mu)
     D = zeros(3,3) ;
     for i = 1:3
         for j = 1:3
-            D(i,j) = dot(R(j,:),lcross(i,:)) ;
+            D(i,j) = dot(R(i,:),lcross(j,:)) ;
         end
     end
 
@@ -104,7 +121,7 @@ end
 
 
 % Two body problem function
-function dx = TwoBP(~,r,mu)
+function dx = TwoBP(~, r, mu)
     x = r(1) ;
     y = r(2) ;
     z = r(3) ;
@@ -124,7 +141,6 @@ end
 
 
 function [a,e,I,RAAN,AOP,f] = RV2OE(r,v,mu)
-        
     % declaring gravitational constant of earth and time provided and ECI
     ECI = [[1 0 0];[0 1 0];[0 0 1]];
     
