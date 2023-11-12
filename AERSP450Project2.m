@@ -17,29 +17,33 @@ for i = 1:l
 end
 
 RSAT = zeros(3,3,3,l/3) ;
-V2SAT = zeros(l/3,3) ;
-ORBEL = zeros(l/3,6) ;
+V2SAT = zeros(3,3,l/3) ;
+ORBEL = zeros(3,6,l/3) ;
 for i = 1:l/3
-    [RSAT(:,:,:,i),V2SAT(i,:),ORBEL(i,:)] = gauss(TIMES((i*3-2:i*3)) ,RSITES((i*3-2:i*3),:) ,LOS((i*3-2:i*3),:),MU) ;
+    [RSAT(:,:,:,i),V2SAT(:,:,i),ORBEL(:,:,i)] = gauss(TIMES((i*3-2:i*3)) ,RSITES((i*3-2:i*3),:) ,LOS((i*3-2:i*3),:),MU) ;
     
 end 
 
 init = zeros(1,6) ;
 f = figure ;
 for i = 1:l/3
-    totalT = 2*pi*sqrt(ORBEL(i,1)^3/MU) ;
-    t = linspace(1,totalT,10000) ;
-    options = odeset('reltol',1e-12,'abstol',1e-12) ;
-    init((1:3)) = RSAT(2,:,i) ;
-    init((4:6)) = V2SAT(i,:) ;
-    [t,RSAT_T] = ode45( @(t,RSAT_T) TwoBP(t,RSAT_T,MU) , t , init, options) ;
-    subplot(1,1,1)
-    plot3(RSAT_T(:,1), RSAT_T(:,2), RSAT_T(:,3))
-    xlabel('X (KM)')
-    ylabel('Y (KM)')
-    zlabel('Z (KM)')
-    exportgraphics(f,['3D' '.jpg'])
-    hold on
+    for j = 1:3 
+        totalT = 2*pi*sqrt(ORBEL(i,1)^3/MU) ;
+        t = linspace(1,totalT,10000) ;
+        options = odeset('reltol',1e-12,'abstol',1e-12) ;
+        init((1:3)) = RSAT(2,:,:,i) ;
+        init((4:6)) = V2SAT(i,:) ;
+        [t,RSAT_T] = ode45( @(t,RSAT_T) TwoBP(t,RSAT_T,MU) , t , init, options) ;
+        
+        
+        subplot(1,1,1)
+        plot3(RSAT_T(:,1), RSAT_T(:,2), RSAT_T(:,3))
+        xlabel('X (KM)')
+        ylabel('Y (KM)')
+        zlabel('Z (KM)')
+        exportgraphics(f,['3D' '.jpg'])
+        hold on
+    end
 end
 hold off
 
@@ -76,7 +80,8 @@ function [Rsat,V2sat,OE] = gauss(time,R,L,mu)
     r2 = r2(r2>0) ;
     
     Rsat = zeros(3,3,3) ;
-    V2sat = zeros(1,3) ;
+    V2sat = zeros(3,3) ;
+    OE = zeros(3,6) ;
     for i = 1:length(r2)
         u2 = mu/(r2(i)^3) ;
 
@@ -89,12 +94,12 @@ function [Rsat,V2sat,OE] = gauss(time,R,L,mu)
 
         Rsat(1,:,i) = R(1,:) + rho(1) * L(1,:) ;
         Rsat(2,:,i) = R(2,:) + rho(2) * L(2,:) ;
-        Rsat(3,:,i) = R(3,:) + rho(3) * L(3,:) ;
+        Rsat(3,:,i) = R(3,:) + rho(3) * L(3,:) 
         
-        V2sat(i,:) = gibbs(Rsat(:,:,i),mu) ;
+        V2sat(i,:) = gibbs(Rsat(:,:,i),mu) 
        
         [a,e,I,O,W,f] = RV2OE(Rsat(2,:,i),V2sat(i,:),mu) ;
-        OE = [a,e,I,O,W,f] ;
+        OE(i,:) = [a,e,I,O,W,f] 
     end
 end
 
