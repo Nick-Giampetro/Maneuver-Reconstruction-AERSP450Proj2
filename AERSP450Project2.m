@@ -2,6 +2,73 @@ clc
 clear
 close all
 
+%% Analytic Part
+
+% values given in part B analytical part of project promt
+a_1 = 13000;
+a_2 = 7226.58;              % semi major axes of orbits 1 and 2
+
+e_1 = 0.3;
+e_2 = 0.444819;             % eccentricity of orbits 1 and 2
+
+I_1 = 20;
+I_2 = 20;                   % inclinations of orbits 1 and 2
+
+RAAN_1 = 30;
+RAAN_2 = 30;                % right ascension of the ascending node for orbits 1 and 2
+
+AOP_1 = 50 * pi/180;
+AOP_2 = 301.901 * pi/180;   % arguments of periapsis for orbits 1 and 2
+                            % given values converted from deg to rad
+
+%calculation of semi latus rectum for both orbits
+p_1 = a_1 * (1 - e_1^2);        
+p_2 = a_2 * (1 - e_2^2); 
+
+% calculation of gamma, beta, and alpha (given in project guidelines for
+% simplified calculations)
+gamma = e_1 * e_2 * sin(AOP_1 - AOP_2);
+beta = e_1 * p_2 - e_2 * p_1 * cos(AOP_1 - AOP_2);
+alpha = e_2 * cos(AOP_1 - AOP_2) - e_1;
+
+% calculation of a, b, and c (determined from equating r^2sin^2f expressions)
+a = (e_1^2 - 1) / e_1^2 - alpha^2 / gamma^2;
+b = 2*p_1 / e_1^2 - 2*beta*alpha / gamma^2;
+c = - (p_1^2 / e_1^2 + beta^2 / gamma^2);
+
+
+%calculation of radius for orbits 1 and 2 using quadratic formula
+r_1 = (-b + sqrt(b^2 - 4*a*c)) / (2*a)
+r_2 = (-b - sqrt(b^2 - 4*a*c)) / (2*a)
+
+
+% calculation of true anaomaly at r - maybe need?
+f_1 = acos((((a_1 * (1 - e_1^2)) / r_1) - 1) / e_1);
+f_2 = acos((((a_2 * (1 - e_2^2)) / r_2) - 1) / e_2);
+
+%%% from proj 1 idkkk didnt work
+
+% R_P(1) = r_1*cosd(f_1) ;
+% R_P(2) = r_1*sind(f_1) ;
+% R_P(3) = 0 ;
+% 
+% cEP = dcm3axis(AOP_1)*dcm1axis(I_1)*dcm3axis(RAAN_1) ;
+% cPE = cEP';
+% R_ECI = cPE * R_P' 
+% % V_ECI = cPE * V_Perifocal' ;
+% 
+% 
+% function r = dcm1axis(ang)
+% r = [1 0 0 ; 0 cosd(ang) sind(ang) ; 0 -sind(ang) cosd(ang)];
+% end
+% 
+% % creates a dcm for an angle about axis 3
+% function r = dcm3axis(ang)
+% r = [cosd(ang) sind(ang) 0 ; -sind(ang) cosd(ang) 0 ; 0 0 1];
+% end
+
+
+%% Numerical Part
 load('IODMeasurements.mat')
 load('IODMeasurements2.mat')
 
