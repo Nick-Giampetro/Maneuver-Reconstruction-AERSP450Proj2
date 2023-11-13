@@ -43,29 +43,46 @@ r_2 = (-b - sqrt(b^2 - 4*a*c)) / (2*a) ;
 
 
 % calculation of true anaomaly at r - maybe need?
-f_1 = acos((((a_1 * (1 - e_1^2)) / r_1) - 1) / e_1);
-f_2 = acos((((a_2 * (1 - e_2^2)) / r_2) - 1) / e_2);
+% f_1 = acos((((a_1 * (1 - e_1^2)) / r_1) - 1) / e_1);
+% f_2 = acos((((a_2 * (1 - e_2^2)) / r_2) - 1) / e_2);
 
 %%% from proj 1 idkkk didnt work
 
-% R_P(1) = r_1*cosd(f_1) ;
-% R_P(2) = r_1*sind(f_1) ;
-% R_P(3) = 0 ;
+% was def approaching this wrong i think and i dont think any of it's right
+% but i really do not know what to do w this. sorry couldnt do more :/
+
+%  R_b1(1) = r_1*cos(I_1)*cos(AOP_1) ;
+%  R_b1(2) = r_1*cos(I_1)*sin(AOP_1) ;
+%  R_b1(3) = r_1*sin(I_1) ;
 % 
-% cEP = dcm3axis(AOP_1)*dcm1axis(I_1)*dcm3axis(RAAN_1) ;
-% cPE = cEP';
-% R_ECI = cPE * R_P' 
+%  cEP1 = dcm3axis(AOP_1)*dcm1axis(I_1)*dcm3axis(RAAN_1) ;
+%  cPE1 = cEP1';
+%  R_ECI1 = cPE * R_b1' 
 % % V_ECI = cPE * V_Perifocal' ;
-% 
-% 
-% function r = dcm1axis(ang)
-% r = [1 0 0 ; 0 cosd(ang) sind(ang) ; 0 -sind(ang) cosd(ang)];
-% end
-% 
-% % creates a dcm for an angle about axis 3
-% function r = dcm3axis(ang)
-% r = [cosd(ang) sind(ang) 0 ; -sind(ang) cosd(ang) 0 ; 0 0 1];
-% end
+
+% part 3 eventually
+% velocity vectors for orbit 1
+% v_11 = 
+% v_12 = 
+
+% velocity vectors for orbit 2
+% v_21 = 
+% v_22 = 
+
+% delta-v calculations for orbits 1 and 2 respectively (part 3B)
+% deltav_1 = abs(v_12 - v_11);
+% deltav_2 = abs(v_22 - v_21);
+
+%  
+
+%  function r = dcm1axis(ang)
+%  r = [1 0 0 ; 0 cosd(ang) sind(ang) ; 0 -sind(ang) cosd(ang)];
+%  end
+%  
+%  % creates a dcm for an angle about axis 3
+%  function r = dcm3axis(ang)
+%  r = [cosd(ang) sind(ang) 0 ; -sind(ang) cosd(ang) 0 ; 0 0 1];
+%  end
 
 
 %% Numerical Part
