@@ -38,8 +38,8 @@ c = - (p_1^2 / e_1^2 + beta^2 / gamma^2);
 
 
 %calculation of radius for orbits 1 and 2 using quadratic formula
-r_1 = (-b + sqrt(b^2 - 4*a*c)) / (2*a)
-r_2 = (-b - sqrt(b^2 - 4*a*c)) / (2*a)
+r_1 = (-b + sqrt(b^2 - 4*a*c)) / (2*a) ;
+r_2 = (-b - sqrt(b^2 - 4*a*c)) / (2*a) ;
 
 
 % calculation of true anaomaly at r - maybe need?
@@ -87,32 +87,70 @@ RSAT = zeros(3,3,3,l/3) ;
 V2SAT = zeros(3,3,l/3) ;
 ORBEL = zeros(3,6,l/3) ;
 for i = 1:l/3
-    [RSAT(:,:,:,i),V2SAT(:,:,i),ORBEL(:,:,i)] = gauss(TIMES((i*3-2:i*3)) ,RSITES((i*3-2:i*3),:) ,LOS((i*3-2:i*3),:),MU) ;
-    
+    [RSAT(:,:,:,i),V2SAT(:,:,i),ORBEL(:,:,i)] = gauss(TIMES((i*3-2:i*3)) ,RSITES((i*3-2:i*3),:) ,LOS((i*3-2:i*3),:),MU) ; 
 end 
 
+iters = 1000 ;
 init = zeros(1,6) ;
-f = figure ;
+RSAT_T = zeros(iters,6,l/3,3) ;
 for i = 1:l/3
-    for j = 1:3 
-        totalT = 2*pi*sqrt(ORBEL(i,1)^3/MU) ;
-        t = linspace(1,totalT,10000) ;
-        options = odeset('reltol',1e-12,'abstol',1e-12) ;
-        init((1:3)) = RSAT(2,:,:,i) ;
-        init((4:6)) = V2SAT(i,:) ;
-        [t,RSAT_T] = ode45( @(t,RSAT_T) TwoBP(t,RSAT_T,MU) , t , init, options) ;
-        
-        
-        subplot(1,1,1)
-        plot3(RSAT_T(:,1), RSAT_T(:,2), RSAT_T(:,3))
-        xlabel('X (KM)')
-        ylabel('Y (KM)')
-        zlabel('Z (KM)')
-        exportgraphics(f,['3D' '.jpg'])
-        hold on
+    for j = 1:3
+        if V2SAT(j,:,i) ~= [0 0 0]
+            totalT = 2*pi*sqrt(abs(ORBEL(j,1,i)^3)/MU) ;
+            t = linspace(1,totalT,iters) ;
+            options = odeset('reltol',1e-12,'abstol',1e-12) ;
+            init((1:3)) = RSAT(2,:,j,i) ;
+            init((4:6)) = V2SAT(j,:,i) ;
+            [t,RSAT_T(:,:,i,j)] = ode45( @(t,RSAT_T) TwoBP(t,RSAT_T,MU) , t , init, options) ;   
+        end
     end
 end
+
+% code for investing the orbits that have multiple r2 values
+for i = 7:l/3
+    f(i) = figure ;
+    xlabel('X (KM)')
+    ylabel('Y (KM)')
+    zlabel('Z (KM)')
+    for j = 1:3
+        if V2SAT(j,:,i-1) ~= [0 0 0]
+            subplot(1,1,1)
+            plot3(RSAT_T(:,1,i-1,j), RSAT_T(:,2,i-1,j), RSAT_T(:,3,i-1,j))
+            hold on
+        end
+        if V2SAT(j,:,i) ~= [0 0 0]
+            subplot(1,1,1)
+            plot3(RSAT_T(:,1,i,j), RSAT_T(:,2,i,j), RSAT_T(:,3,i,j))
+            hold on
+        end
+    end
+    hold off
+end
+
+exportgraphics(f(7),['r2Orbit7' '.jpg'])
+exportgraphics(f(8),['r2Orbit8' '.jpg'])
+
+f = figure ;
+subplot(1,1,1)
+for i = 1:l/3
+
+    xlabel('X (KM)')
+    ylabel('Y (KM)')
+    zlabel('Z (KM)')
+    j = 1 ;
+    if (i == 7)
+        j = 3 ;
+    elseif (i == 8)
+        j = 2 ;
+    end
+    
+    plot3(RSAT_T(:,1,i,j), RSAT_T(:,2,i,j), RSAT_T(:,3,i,j))
+    hold on
+end
 hold off
+exportgraphics(f,['3D' '.jpg'])
+
+
 
 function [Rsat,V2sat,OE] = gauss(time,R,L,mu)
     z1 = time(1) - time(2) ;
@@ -161,12 +199,12 @@ function [Rsat,V2sat,OE] = gauss(time,R,L,mu)
 
         Rsat(1,:,i) = R(1,:) + rho(1) * L(1,:) ;
         Rsat(2,:,i) = R(2,:) + rho(2) * L(2,:) ;
-        Rsat(3,:,i) = R(3,:) + rho(3) * L(3,:) 
+        Rsat(3,:,i) = R(3,:) + rho(3) * L(3,:) ;
         
-        V2sat(i,:) = gibbs(Rsat(:,:,i),mu) 
+        V2sat(i,:) = gibbs(Rsat(:,:,i),mu) ;
        
         [a,e,I,O,W,f] = RV2OE(Rsat(2,:,i),V2sat(i,:),mu) ;
-        OE(i,:) = [a,e,I,O,W,f] 
+        OE(i,:) = [a,e,I,O,W,f] ;
     end
 end
 
