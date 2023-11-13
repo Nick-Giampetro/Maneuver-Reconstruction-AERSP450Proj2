@@ -132,7 +132,6 @@ lvals = [1,2,4,6,7] ;
 ORBEL_F = zeros(7,6) ;
 delta_V_Numeric = zeros(1,7)
 j = 1 ;
-delta_V_Numeric_tot = 0 ;
 for i = lvals 
     if (i == 7)
         j = 3;
@@ -145,7 +144,7 @@ for i = lvals
     ORBEL_F(i,:) = ORBEL(j,:,i) ;
     if i ~= 1
        delta_V_Numeric(i) = deltaVCalc(ORBEL_F(ip,1),ORBEL_F(ip,2),ORBEL_F(ip,3),ORBEL_F(ip,4),ORBEL_F(ip,5),ORBEL_F(i,1),ORBEL_F(i,2),ORBEL_F(i,3),ORBEL_F(i,4),ORBEL_F(i,5),MU) ;
-       delta_V_Numeric_tot = delta_V_Numeric_tot + delta_V_Numeric(i) ;
+       delta_V_Numeric_tot =  
     end
     ip = i ;
 end
@@ -180,9 +179,6 @@ function delta_V = deltaVCalc (a_1,e_1,I_1,RAAN_1,AOP_1,a_2,e_2,I_2,RAAN_2,AOP_2
     r_1 = (-b + sqrt(b^2 - 4*a*c)) / (2*a) 
     r_2 = (-b - sqrt(b^2 - 4*a*c)) / (2*a) 
     
-    r_1 = real(r_1) ;
-    r_2 = real(r_2) ;
-
     % calculation of true anaomaly at r
     f_1 = acosd((p_1-r_1)/(r_1*e_1));
     f_2 = acosd((p_2-r_2)/(r_2*e_2));
