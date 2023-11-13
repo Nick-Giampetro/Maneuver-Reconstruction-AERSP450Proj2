@@ -2,6 +2,79 @@ clc
 clear
 close all
 
+%% Analytic Part
+
+% values given in part B analytical part of project promt
+a_1 = 13000;
+a_2 = 7226.58;              % semi major axes of orbits 1 and 2
+
+e_1 = 0.3;
+e_2 = 0.444819;             % eccentricity of orbits 1 and 2
+
+I_1 = 20;
+I_2 = 20;                   % inclinations of orbits 1 and 2
+
+RAAN_1 = 30;
+RAAN_2 = 30;                % right ascension of the ascending node for orbits 1 and 2
+
+AOP_1 = 50 * pi/180;
+AOP_2 = 301.901 * pi/180;   % arguments of periapsis for orbits 1 and 2
+                            % given values converted from deg to rad
+
+%calculation of semi latus rectum for both orbits
+p_1 = a_1 * (1 - e_1^2);        
+p_2 = a_2 * (1 - e_2^2); 
+
+% calculation of gamma, beta, and alpha (given in project guidelines for
+% simplified calculations)
+gamma = e_1 * e_2 * sin(AOP_1 - AOP_2);
+beta = e_1 * p_2 - e_2 * p_1 * cos(AOP_1 - AOP_2);
+alpha = e_2 * cos(AOP_1 - AOP_2) - e_1;
+
+% calculation of a, b, and c (determined from equating r^2sin^2f expressions)
+a = (e_1^2 - 1) / e_1^2 - alpha^2 / gamma^2;
+b = 2*p_1 / e_1^2 - 2*beta*alpha / gamma^2;
+c = - (p_1^2 / e_1^2 + beta^2 / gamma^2);
+
+
+%calculation of radius for orbits 1 and 2 using quadratic formula
+r_1 = (-b + sqrt(b^2 - 4*a*c)) / (2*a)
+r_2 = (-b - sqrt(b^2 - 4*a*c)) / (2*a)
+
+
+% calculation of true anaomaly at r - maybe need?
+f_1 = acos((((a_1 * (1 - e_1^2)) / r_1) - 1) / e_1);
+f_2 = acos((((a_2 * (1 - e_2^2)) / r_2) - 1) / e_2);
+
+%%% from proj 1 idkkk didnt work
+
+
+
+ R_orb1(1) = r_1*cos(I_1)*cos(AOP_1) ;
+ R_orb1(2) = r_1*cos(I_1)*sin(AOP_1) ;
+ R_orb1(3) = r_1*sin(I_1) ;
+
+ cEP = dcm3axis(AOP_1)*dcm1axis(I_1)*dcm3axis(RAAN_1) ;
+ cPE = cEP';
+ R_ECI = cPE * R_orb1' 
+% % V_ECI = cPE * V_Perifocal' ;
+ 
+
+deltav_1 = abs(v12-v11);
+deltav_2 = abs(v22-v21);
+
+%  
+%  function r = dcm1axis(ang)
+%  r = [1 0 0 ; 0 cosd(ang) sind(ang) ; 0 -sind(ang) cosd(ang)];
+%  end
+%  
+%  % creates a dcm for an angle about axis 3
+%  function r = dcm3axis(ang)
+%  r = [cosd(ang) sind(ang) 0 ; -sind(ang) cosd(ang) 0 ; 0 0 1];
+%  end
+
+
+%% Numerical Part
 load('IODMeasurements.mat')
 load('IODMeasurements2.mat')
 
@@ -16,30 +89,34 @@ for i = 1:l
     LOS(i,3) = sind(ELEVATION(i)) ;
 end
 
-RSAT = zeros(3,3,l/3) ;
-V2SAT = zeros(l/3,3) ;
-ORBEL = zeros(l/3,6) ;
+RSAT = zeros(3,3,3,l/3) ;
+V2SAT = zeros(3,3,l/3) ;
+ORBEL = zeros(3,6,l/3) ;
 for i = 1:l/3
-    [RSAT(:,:,i),V2SAT(i,:),ORBEL(i,:)] = gauss(TIMES((i*3-2:i*3)) ,RSITES((i*3-2:i*3),:) ,LOS((i*3-2:i*3),:),MU) ;
+    [RSAT(:,:,:,i),V2SAT(:,:,i),ORBEL(:,:,i)] = gauss(TIMES((i*3-2:i*3)) ,RSITES((i*3-2:i*3),:) ,LOS((i*3-2:i*3),:),MU) ;
     
 end 
 
 init = zeros(1,6) ;
 f = figure ;
 for i = 1:l/3
-    totalT = 2*pi*sqrt(ORBEL(i,1) ;
-    t = linspace(1,totalT,10000) ;
-    options = odeset('reltol',1e-12,'abstol',1e-12) ;
-    init((1:3)) = RSAT(2,:,i) ;
-    init((4:6)) = V2SAT(i,:) ;
-    [t,RSAT_T] = ode45( @(t,RSAT_T) TwoBP(t,RSAT_T,MU) , t , init, options) ;
-    subplot(1,1,1)
-    plot3(RSAT_T(:,1), RSAT_T(:,2), RSAT_T(:,3))
-    xlabel('X (KM)')
-    ylabel('Y (KM)')
-    zlabel('Z (KM)')
-    exportgraphics(f,['3D' '.jpg'])
-    hold on
+    for j = 1:3 
+        totalT = 2*pi*sqrt(ORBEL(i,1)^3/MU) ;
+        t = linspace(1,totalT,10000) ;
+        options = odeset('reltol',1e-12,'abstol',1e-12) ;
+        init((1:3)) = RSAT(2,:,:,i) ;
+        init((4:6)) = V2SAT(i,:) ;
+        [t,RSAT_T] = ode45( @(t,RSAT_T) TwoBP(t,RSAT_T,MU) , t , init, options) ;
+        
+        
+        subplot(1,1,1)
+        plot3(RSAT_T(:,1), RSAT_T(:,2), RSAT_T(:,3))
+        xlabel('X (KM)')
+        ylabel('Y (KM)')
+        zlabel('Z (KM)')
+        exportgraphics(f,['3D' '.jpg'])
+        hold on
+    end
 end
 hold off
 
@@ -71,10 +148,13 @@ function [Rsat,V2sat,OE] = gauss(time,R,L,mu)
     c = - mu^2*B^2 ;
 
     r2 = roots([1 0 a 0 0 b 0 0 c]) ;
-    % rejects values that are not positive 
+    % rejects values that are not real and positive
     r2 = r2(r2==real(r2)) ;
     r2 = r2(r2>0) ;
-
+    
+    Rsat = zeros(3,3,3) ;
+    V2sat = zeros(3,3) ;
+    OE = zeros(3,6) ;
     for i = 1:length(r2)
         u2 = mu/(r2(i)^3) ;
 
@@ -85,14 +165,14 @@ function [Rsat,V2sat,OE] = gauss(time,R,L,mu)
         rho(2) = A + u2*B;
         rho(3) = 1/D0 * ( (-c1/c3)*D(1,3) + (1/c3)*D(2,3) - D(3,3) )  ;
 
-        Rsat(1,:) = R(1,:) + rho(1) * L(1,:) ;
-        Rsat(2,:) = R(2,:) + rho(2) * L(2,:) ;
-        Rsat(3,:) = R(3,:) + rho(3) * L(3,:) ;
+        Rsat(1,:,i) = R(1,:) + rho(1) * L(1,:) ;
+        Rsat(2,:,i) = R(2,:) + rho(2) * L(2,:) ;
+        Rsat(3,:,i) = R(3,:) + rho(3) * L(3,:) 
         
-        V2sat = gibbs(Rsat,mu) ;
+        V2sat(i,:) = gibbs(Rsat(:,:,i),mu) 
        
-        [a,e,I,O,W,f] = RV2OE(Rsat(2,:),V2sat,mu) ;
-        OE = [a,e,I,O,W,f] ;
+        [a,e,I,O,W,f] = RV2OE(Rsat(2,:,i),V2sat(i,:),mu) ;
+        OE(i,:) = [a,e,I,O,W,f] 
     end
 end
 
@@ -186,3 +266,14 @@ function [a,e,I,RAAN,AOP,f] = RV2OE(r,v,mu)
         f = 360 - acosd(dot(eV,r)/(e*R1)) ;
     end
 end
+
+
+ 
+ function r = dcm1axis(ang)
+ r = [1 0 0 ; 0 cosd(ang) sind(ang) ; 0 -sind(ang) cosd(ang)];
+ end
+ 
+ % creates a dcm for an angle about axis 3
+ function r = dcm3axis(ang)
+ r = [cosd(ang) sind(ang) 0 ; -sind(ang) cosd(ang) 0 ; 0 0 1];
+ end
