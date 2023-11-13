@@ -60,7 +60,7 @@ r_2 = (-b - sqrt(b^2 - 4*a*c)) / (2*a)
 %  R_ECI1 = cPE * R_b1' 
 % % V_ECI = cPE * V_Perifocal' ;
 
-
+% part 3 eventually
 % velocity vectors for orbit 1
 % v_11 = 
 % v_12 = 
